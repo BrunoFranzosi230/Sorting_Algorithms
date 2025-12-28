@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Master Sorting Visualizer</title>
+    <title>Nebula Sorting Visualizer</title>
     <style>
         /* --- THEME: Deep Space / Cyberpunk --- */
         body {
-            background-color: #0f172a; /* Slate 900 */
+            background-color: #020617; /* Very Dark Slate */
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 80%);
             color: #e2e8f0;
             font-family: 'Consolas', 'Courier New', monospace;
             display: flex;
@@ -15,9 +16,17 @@
             margin: 0;
             padding: 20px;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        h1 { margin-bottom: 10px; font-size: 1.8rem; color: #38bdf8; text-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+        h1 { 
+            margin-bottom: 20px; 
+            font-size: 2rem; 
+            color: #38bdf8; 
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.6); 
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
 
         .main-container {
             display: flex;
@@ -29,103 +38,127 @@
 
         .canvas-container {
             position: relative;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(16, 185, 129, 0.1);
+            border-radius: 8px;
             overflow: hidden;
-            background-color: #1e293b;
+            background-color: rgba(15, 23, 42, 0.8);
             border: 1px solid #334155;
+            backdrop-filter: blur(10px);
         }
 
         canvas { display: block; }
 
         /* --- CONTROLS --- */
         .controls-bar {
-            margin-top: 20px;
+            margin-top: 25px;
             display: flex;
             gap: 15px;
-            background: #1e293b;
-            padding: 15px 25px;
-            border-radius: 10px;
-            border: 1px solid #334155;
+            background: rgba(30, 41, 59, 0.7);
+            padding: 15px 30px;
+            border-radius: 100px; /* Pill shape */
+            border: 1px solid #475569;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
         }
 
         select {
-            padding: 12px;
+            padding: 12px 20px;
             background-color: #0f172a;
+            color: #64748b; /* Start dimmed */
             color: #fff;
             border: 1px solid #475569;
-            border-radius: 6px;
+            border-radius: 30px;
             font-family: inherit;
             cursor: pointer;
             outline: none;
             font-size: 14px;
+            transition: 0.3s;
         }
+        select:hover { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.2); }
 
         button {
-            padding: 12px 24px;
+            padding: 12px 28px;
             border: none;
             color: white;
-            border-radius: 6px;
+            border-radius: 30px;
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
         }
 
-        button:active { transform: translateY(1px); }
+        button:active { transform: scale(0.95); }
 
-        #startBtn { background: linear-gradient(135deg, #10b981, #059669); }
-        #startBtn:hover { box-shadow: 0 0 15px #10b98166; }
-        #startBtn:disabled { background: #334155; opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        #startBtn { 
+            background: linear-gradient(135deg, #0ea5e9, #2563eb); 
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);
+        }
+        #startBtn:hover { box-shadow: 0 0 30px rgba(14, 165, 233, 0.7); filter: brightness(1.1); }
+        #startBtn:disabled { background: #334155; opacity: 0.3; cursor: not-allowed; box-shadow: none; }
 
         #stopBtn { background: linear-gradient(135deg, #ef4444, #b91c1c); }
-        #stopBtn:hover { box-shadow: 0 0 15px #ef444466; }
-        #stopBtn:disabled { background: #334155; opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        #stopBtn:hover { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        #stopBtn:disabled { background: #334155; opacity: 0.3; cursor: not-allowed; box-shadow: none; }
 
-        #resetBtn { background-color: #3b82f6; }
-        #resetBtn:hover { background-color: #2563eb; }
+        #resetBtn { background-color: transparent; border: 1px solid #64748b; color: #cbd5e1; }
+        #resetBtn:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.05); }
 
         /* --- CODE OVERLAY --- */
         .code-panel {
-            width: 400px;
-            background-color: #0d1117;
+            width: 380px;
+            background-color: rgba(13, 17, 23, 0.9);
             border: 1px solid #334155;
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 20px;
             box-sizing: border-box;
             font-size: 13px;
-            line-height: 1.5;
-            height: 300px; /* Match canvas height */
+            line-height: 1.6;
+            height: 350px; 
             overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
+        /* Custom Scrollbar */
+        .code-panel::-webkit-scrollbar { width: 8px; }
+        .code-panel::-webkit-scrollbar-track { background: #0d1117; }
+        .code-panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
         .code-title {
-            color: #94a3b8;
-            font-size: 12px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 5px;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
         }
         
-        .code-line { padding: 2px 8px; border-radius: 4px; color: #8b949e; white-space: pre-wrap; font-family: 'Consolas', monospace; }
-        .active-line { background-color: #38bdf822; color: #e2e8f0; border-left: 3px solid #38bdf8; }
+        .code-line { padding: 0 8px; border-radius: 4px; color: #6e7681; white-space: pre-wrap; font-family: 'Consolas', monospace; transition: all 0.2s; }
+        .active-line { 
+            background-color: rgba(56, 189, 248, 0.15); 
+            color: #e2e8f0; 
+            border-left: 3px solid #38bdf8;
+            padding-left: 10px;
+            text-shadow: 0 0 8px rgba(56,189,248,0.5);
+        }
         
-        /* Syntax Highlighting */
-        .kwd { color: #ff7b72; } /* Keyword (Red/Pink) */
-        .fun { color: #d2a8ff; } /* Function (Purple) */
-        .var { color: #79c0ff; } /* Variable (Blue) */
-        .com { color: #6e7681; font-style: italic; } /* Comment (Grey) */
+        .kwd { color: #ff7b72; } 
+        .fun { color: #d2a8ff; } 
+        .var { color: #79c0ff; } 
+        .com { color: #4b5563; font-style: italic; } 
 
     </style>
 </head>
 <body>
 
-    <h1>Master Sorting Visualizer</h1>
+    <h1>Nebula Sorting Visualizer</h1>
 
     <div class="main-container">
         <div class="canvas-container">
@@ -133,9 +166,11 @@
         </div>
 
         <div class="code-panel">
-            <div class="code-title">Algorithm Logic</div>
-            <div id="codeDisplay">
-                </div>
+            <div class="code-title">
+                <span>Kernel Processing</span>
+                <span id="statusText" style="color:#10b981">IDLE</span>
+            </div>
+            <div id="codeDisplay"></div>
         </div>
     </div>
 
@@ -156,63 +191,160 @@
                 <option value="radix">Radix Sort (LSD)</option>
             </optgroup>
         </select>
-        <button id="resetBtn" onclick="init()">Shuffle Array</button>
-        <button id="startBtn" onclick="runAlgorithm()">Start</button>
-        <button id="stopBtn" onclick="stopSort()" disabled>Stop</button>
+        <button id="resetBtn" onclick="init()">Shuffle Data</button>
+        <button id="startBtn" onclick="runAlgorithm()">Initiate Sequence</button>
+        <button id="stopBtn" onclick="stopSort()" disabled>Abort</button>
     </div>
 
     <script>
         const canvas = document.getElementById('myCanvas');
         const ctx = canvas.getContext('2d');
         const codeDisplay = document.getElementById('codeDisplay');
+        const statusText = document.getElementById('statusText');
         
         // --- GLOBAL CONFIG ---
-        const arraySize = 60;
+        const arraySize = 64; // Power of 2 usually looks/sounds best
         let array = [];
-        const delay = 30; // Global speed
+        let delay = 35; 
         
-        let audioCtx = null;
-        let masterGain = null;
         let isStopped = true;
 
-        // --- AUDIO ENGINE (Pentatonic Minor + Echo) ---
-        const scale = [
-            130.81, 155.56, 174.61, 196.00, 233.08, 
-            261.63, 311.13, 349.23, 392.00, 466.16, 
-            523.25, 622.25, 698.46, 783.99, 932.33, 1046.50
+        // ============================================
+        // 🎵 HIGH-FIDELITY AUDIO ENGINE (Web Audio API)
+        // ============================================
+        let audioCtx = null;
+        let masterGain = null;
+        let reverbNode = null;
+        let compressor = null;
+
+        // E Minor Scale frequencies (low to high) for a "Techno/Trance" feel
+        const scaleMap = [
+            164.81, 196.00, 220.00, 246.94, 293.66, 329.63, 392.00, 440.00, 
+            493.88, 587.33, 659.25, 783.99, 880.00, 987.77, 1174.66, 1318.51,
+            1567.98, 1760.00, 1975.53, 2349.32, 2637.02
         ];
 
-        function playNote(value, type='sine') {
-            if (isStopped) return;
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                // Echo Effect
-                const d = audioCtx.createDelay(); d.delayTime.value = 0.2;
-                const f = audioCtx.createGain(); f.gain.value = 0.3;
-                masterGain = audioCtx.createGain(); masterGain.gain.value = 0.1;
-                
-                masterGain.connect(audioCtx.destination);
-                masterGain.connect(d); d.connect(f); f.connect(d); d.connect(audioCtx.destination);
-            }
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
 
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
+            // 1. Dynamics Compressor (Prevents clipping when many notes play)
+            compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
+            compressor.knee.setValueAtTime(30, audioCtx.currentTime);
+            compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+            compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+            compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+            // 2. Master Gain
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.4;
+
+            // 3. Algorithmic Reverb (Convolver) - Creates the "Space"
+            reverbNode = audioCtx.createConvolver();
+            reverbNode.buffer = impulseResponse(2.5, 2.5); // 2.5 seconds reverb tail
+
+            // Chain: Reverb -> Compressor -> Master -> Out
+            // We mix Dry and Wet signals
             
-            // Map value to scale
-            const noteIndex = Math.floor(value * (scale.length - 1));
-            osc.frequency.value = scale[noteIndex] || scale[0];
-            osc.type = type;
-
-            const now = audioCtx.currentTime;
-            g.gain.setValueAtTime(0, now);
-            g.gain.linearRampToValueAtTime(0.5, now + 0.01);
-            g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-
-            osc.connect(g); g.connect(masterGain);
-            osc.start(); osc.stop(now + 0.25);
+            // Wet Mix (Reverb)
+            const reverbGain = audioCtx.createGain();
+            reverbGain.gain.value = 0.5;
+            
+            // Connect Graph
+            reverbNode.connect(reverbGain);
+            reverbGain.connect(compressor);
+            compressor.connect(masterGain);
+            masterGain.connect(audioCtx.destination);
         }
 
-        // --- ALGORITHM CODE DATA ---
+        // Helper to generate a reverb impulse
+        function impulseResponse(duration, decay) {
+            const length = audioCtx.sampleRate * duration;
+            const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate);
+            const left = impulse.getChannelData(0);
+            const right = impulse.getChannelData(1);
+            for (let i = 0; i < length; i++) {
+                const n = i / length;
+                // Exponential decay noise
+                left[i] = (Math.random() * 2 - 1) * Math.pow(1 - n, decay);
+                right[i] = (Math.random() * 2 - 1) * Math.pow(1 - n, decay);
+            }
+            return impulse;
+        }
+
+        // THE CORE SOUND FUNCTION
+        function playNote(value, index) {
+            if (isStopped || !audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            // 1. Map Value to Scale Frequency
+            // We map the 0-1 value to an index in our scale array
+            const scaleIndex = Math.floor(value * (scaleMap.length - 1));
+            const freq = scaleMap[scaleIndex];
+
+            // 2. FM Synthesis Setup (Glassy/Metallic Sound)
+            const osc = audioCtx.createOscillator(); // Carrier
+            const mod = audioCtx.createOscillator(); // Modulator
+            const modGain = audioCtx.createGain();   // Modulation Depth
+
+            const mainGain = audioCtx.createGain();  // Volume Envelope
+            const panNode = audioCtx.createStereoPanner(); // Spatial 
+
+            // 3. Configure Oscillators
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now);
+
+            mod.type = 'sine';
+            // Modulator ratio makes the timber. 2:1 is "bell like"
+            mod.frequency.setValueAtTime(freq * 2.0, now); 
+            
+            // FM Depth varies by pitch (higher pitch = brighter/sharper)
+            modGain.gain.setValueAtTime(freq * 0.5, now);
+
+            // 4. Stereo Panning (Left to Right based on array index)
+            // Map index (0 to arraySize) to Panning (-0.9 to 0.9)
+            const panVal = (index / arraySize) * 1.8 - 0.9;
+            panNode.pan.setValueAtTime(panVal, now);
+
+            // 5. Volume Envelope (ADSR - Quick pluck)
+            mainGain.gain.setValueAtTime(0, now);
+            mainGain.gain.linearRampToValueAtTime(0.3, now + 0.01); // Attack
+            mainGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25); // Release
+
+            // 6. Connections
+            // FM Path: Modulator -> ModGain -> Carrier.frequency
+            mod.connect(modGain);
+            modGain.connect(osc.frequency);
+
+            // Output Path: Carrier -> MainGain -> Panner -> (Split to Reverb & Compressor)
+            osc.connect(mainGain);
+            mainGain.connect(panNode);
+
+            // Send to Compressor (Dry)
+            panNode.connect(compressor);
+            // Send to Reverb (Wet)
+            panNode.connect(reverbNode);
+
+            // 7. Start/Stop
+            osc.start(now);
+            mod.start(now);
+            osc.stop(now + 0.3);
+            mod.stop(now + 0.3);
+            
+            // Garbage collection helps keep it clean
+            setTimeout(() => {
+                mainGain.disconnect();
+                panNode.disconnect();
+            }, 350);
+        }
+
+        // ============================================
+        // VISUALIZER LOGIC
+        // ============================================
+        
         const algorithms = {
             bubble: [
                 `<span class="kwd">for</span> (let i = 0; i < n; i++) {`,
@@ -293,7 +425,6 @@
             ]
         };
 
-        // --- HELPER FUNCTIONS ---
         function init() {
             stopSort();
             setTimeout(() => {
@@ -301,7 +432,9 @@
                 for(let i=0; i<arraySize; i++) array.push(Math.random());
                 drawArray();
                 loadAlgorithm();
-            }, 100);
+                statusText.innerText = "READY";
+                statusText.style.color = "#10b981";
+            }, 50);
         }
 
         function loadAlgorithm() {
@@ -315,7 +448,9 @@
         function highlight(lineIdx) {
             document.querySelectorAll('.code-line').forEach(e => e.classList.remove('active-line'));
             if (lineIdx !== null && document.getElementById(`line${lineIdx}`)) {
-                document.getElementById(`line${lineIdx}`).classList.add('active-line');
+                const el = document.getElementById(`line${lineIdx}`);
+                el.classList.add('active-line');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
@@ -325,33 +460,50 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const w = canvas.width / arraySize;
             
+            // Gradient Base
+            const grad = ctx.createLinearGradient(0, canvas.height, 0, 0);
+            grad.addColorStop(0, "#0f172a");
+            grad.addColorStop(1, "#334155");
+
             for (let i = 0; i < arraySize; i++) {
                 const h = array[i] * (canvas.height - 40) + 10;
                 const x = i * w;
                 const y = canvas.height - h;
                 
-                let color = '#334155'; // Default Slate
+                let fill = grad; 
+                let glowColor = 'transparent';
+                let glowBlur = 0;
 
-                if (sortedIndices.includes(i)) color = '#8b5cf6'; // Sorted (Violet)
-                if (colors[i]) color = colors[i]; // Override (Active/Pivot)
-                
-                ctx.fillStyle = color;
-                
-                // Glow effect for active elements
-                if (colors[i]) {
-                    ctx.shadowBlur = 15; ctx.shadowColor = color;
-                } else {
-                    ctx.shadowBlur = 0;
+                // Color Logic
+                if (sortedIndices.includes(i)) {
+                    fill = '#8b5cf6'; // Violet
+                    glowColor = '#8b5cf6';
+                    glowBlur = 10;
                 }
                 
+                if (colors[i]) {
+                    fill = colors[i];
+                    glowColor = colors[i];
+                    glowBlur = 20;
+                }
+                
+                ctx.shadowColor = glowColor;
+                ctx.shadowBlur = glowBlur;
+                ctx.fillStyle = fill;
+                
                 ctx.beginPath();
+                // Rounded tops
                 ctx.roundRect(x + 1, y, w - 2, h, [4, 4, 0, 0]);
                 ctx.fill();
             }
+            // Reset shadow for performance
+            ctx.shadowBlur = 0;
         }
 
         function stopSort() {
             isStopped = true;
+            statusText.innerText = "ABORTED";
+            statusText.style.color = "#ef4444";
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
             document.getElementById('resetBtn').disabled = false;
@@ -359,17 +511,24 @@
         }
 
         async function runAlgorithm() {
+            initAudio(); // Initialize audio context on user interaction
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+
             isStopped = false;
+            statusText.innerText = "PROCESSING...";
+            statusText.style.color = "#38bdf8";
+            
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
             document.getElementById('resetBtn').disabled = true;
 
             const algo = document.getElementById('algoSelect').value;
+            
+            // Adjust speed based on Algo
+            delay = (algo === 'bubble' || algo === 'insertion') ? 20 : 40;
+            if(algo === 'merge' || algo === 'quick') delay = 35;
+            if(algo === 'radix') delay = 30;
 
-            // Initialize Audio on first user gesture
-            if (!audioCtx) playNote(0); 
-
-            // Router
             if (algo === 'bubble') await bubbleSort();
             else if (algo === 'insertion') await insertionSort();
             else if (algo === 'selection') await selectionSort();
@@ -379,77 +538,75 @@
             else if (algo === 'heap') await heapSort();
             else if (algo === 'radix') await radixSort();
 
-            // Finish Animation (UPDATED: Fills Green and stays Green)
             if (!isStopped) {
-                highlight(null);
-                let finishedColors = {}; // Accumulator for green bars
-                
-                for(let i=0; i<arraySize; i++) {
-                    if (isStopped) break;
-                    
-                    finishedColors[i] = '#10b981'; // Mark this bar as green
-                    drawArray(finishedColors);     // Draw all marked bars
-                    
-                    playNote(array[i]);
-                    await sleep(15);
-                }
-                // No final drawArray() here, so it stays green!
+                await finishAnimation();
             }
             stopSort();
+            statusText.innerText = "COMPLETE";
+            statusText.style.color = "#10b981";
+        }
+
+        async function finishAnimation() {
+            highlight(null);
+            let finishedColors = {};
+            // Play a satisfying chord sweep
+            for(let i=0; i<arraySize; i++) {
+                if (isStopped) break;
+                finishedColors[i] = '#10b981'; // Emerald Green
+                drawArray(finishedColors);
+                
+                // Play fast sweep
+                if (i % 2 === 0) playNote(array[i], i);
+                await sleep(10);
+            }
         }
 
         // ============================================
-        // ALGORITHMS
+        // ALGORITHMS (Passed index to playNote for panning)
         // ============================================
 
-        // 1. BUBBLE SORT
         async function bubbleSort() {
             for(let i=0; i<arraySize; i++) {
                 if(isStopped) return;
                 highlight(0);
                 for(let j=0; j<arraySize-i-1; j++) {
                     if(isStopped) return;
-                    highlight(2);
+                    highlight(3);
                     drawArray({[j]: '#f472b6', [j+1]: '#f472b6'}, getSortedRange(arraySize-i, arraySize));
                     if(array[j] > array[j+1]) {
                         highlight(4);
                         let temp = array[j]; array[j] = array[j+1]; array[j+1] = temp;
-                        playNote(array[j+1]);
+                        playNote(array[j+1], j+1); // Pass Index!
                         await sleep(delay);
                     }
                 }
             }
         }
-        function getSortedRange(start, end) {
-            let res = []; for(let i=start; i<end; i++) res.push(i); return res;
-        }
 
-        // 2. INSERTION SORT
         async function insertionSort() {
             for (let i = 1; i < arraySize; i++) {
                 if(isStopped) return;
                 let key = array[i];
                 let j = i - 1;
                 highlight(1);
-                drawArray({[i]: '#a78bfa'}); // Key is Purple
+                drawArray({[i]: '#a78bfa'}); 
                 await sleep(delay);
 
                 while (j >= 0 && array[j] > key) {
                     if(isStopped) return;
-                    highlight(4);
+                    highlight(5);
                     array[j + 1] = array[j];
-                    drawArray({[j]: '#f472b6', [i]: '#a78bfa'}); // Moving Red
-                    playNote(array[j]);
+                    drawArray({[j]: '#f472b6', [i]: '#a78bfa'});
+                    playNote(array[j], j);
                     await sleep(delay);
                     j--;
                 }
                 array[j + 1] = key;
                 highlight(8);
-                playNote(key);
+                playNote(key, j+1);
             }
         }
 
-        // 3. SELECTION SORT
         async function selectionSort() {
             for (let i = 0; i < arraySize; i++) {
                 if(isStopped) return;
@@ -457,63 +614,56 @@
                 highlight(1);
                 for (let j = i + 1; j < arraySize; j++) {
                     if(isStopped) return;
-                    highlight(3);
-                    // Fast Scan
+                    highlight(4);
                     drawArray({[min]: '#facc15', [j]: '#38bdf8'}, getSortedRange(0, i));
                     if (array[j] < array[min]) {
                         min = j;
-                        playNote(array[min]);
+                        playNote(array[min], min);
                     }
                     await sleep(5);
                 }
                 if (min !== i) {
                     highlight(6);
                     let temp = array[i]; array[i] = array[min]; array[min] = temp;
-                    playNote(array[i]);
+                    playNote(array[i], i);
                     await sleep(delay*2);
                 }
             }
         }
 
-        // 4. COCKTAIL SHAKER
         async function cocktailSort() {
             let swapped = true;
             let start = 0, end = arraySize;
             while(swapped) {
                 if(isStopped) return;
                 swapped = false;
-                // Forward
                 for(let i=start; i<end-1; i++) {
                     if(isStopped) return;
                     drawArray({[i]: '#f472b6', [i+1]: '#f472b6'});
                     if(array[i] > array[i+1]) {
                         let t=array[i]; array[i]=array[i+1]; array[i+1]=t;
-                        swapped = true; playNote(array[i+1]); await sleep(delay);
+                        swapped = true; playNote(array[i+1], i+1); await sleep(delay);
                     }
                 }
                 if(!swapped) break;
                 end--;
-                // Backward
                 for(let i=end-1; i>=start; i--) {
                     if(isStopped) return;
                     drawArray({[i]: '#38bdf8', [i+1]: '#38bdf8'});
                     if(array[i] > array[i+1]) {
                         let t=array[i]; array[i]=array[i+1]; array[i+1]=t;
-                        swapped = true; playNote(array[i]); await sleep(delay);
+                        swapped = true; playNote(array[i], i); await sleep(delay);
                     }
                 }
                 start++;
             }
         }
 
-        // 5. MERGE SORT
         async function mergeSort(left, right) {
             if(isStopped || left >= right) return;
             highlight(1);
             const mid = Math.floor((left + right) / 2);
-            highlight(3);
             await mergeSort(left, mid);
-            highlight(4);
             await mergeSort(mid + 1, right);
             highlight(5);
             await merge(left, mid, right);
@@ -527,43 +677,39 @@
 
             while(i < lArr.length && j < rArr.length) {
                 if(isStopped) return;
-                // Show range being merged in Blue
                 let rangeColors = {};
-                for(let x=left; x<=right; x++) rangeColors[x] = '#38bdf8';
-                rangeColors[k] = '#facc15'; // Current write pos Yellow
+                for(let x=left; x<=right; x++) rangeColors[x] = 'rgba(56, 189, 248, 0.3)';
+                rangeColors[k] = '#facc15'; 
                 
                 drawArray(rangeColors);
                 
                 if(lArr[i] <= rArr[j]) { array[k] = lArr[i]; i++; }
                 else { array[k] = rArr[j]; j++; }
-                playNote(array[k]);
+                playNote(array[k], k);
                 await sleep(delay);
                 k++;
             }
             while(i < lArr.length) {
                 if(isStopped) return;
-                let rangeColors = {}; for(let x=left; x<=right; x++) rangeColors[x] = '#38bdf8';
+                let rangeColors = {}; for(let x=left; x<=right; x++) rangeColors[x] = 'rgba(56, 189, 248, 0.3)';
                 rangeColors[k] = '#facc15';
                 drawArray(rangeColors);
-                array[k] = lArr[i]; playNote(array[k]); await sleep(delay); i++; k++;
+                array[k] = lArr[i]; playNote(array[k], k); await sleep(delay); i++; k++;
             }
             while(j < rArr.length) {
                 if(isStopped) return;
-                let rangeColors = {}; for(let x=left; x<=right; x++) rangeColors[x] = '#38bdf8';
+                let rangeColors = {}; for(let x=left; x<=right; x++) rangeColors[x] = 'rgba(56, 189, 248, 0.3)';
                 rangeColors[k] = '#facc15';
                 drawArray(rangeColors);
-                array[k] = rArr[j]; playNote(array[k]); await sleep(delay); j++; k++;
+                array[k] = rArr[j]; playNote(array[k], k); await sleep(delay); j++; k++;
             }
         }
 
-        // 6. QUICK SORT
         async function quickSort(start, end) {
             if(isStopped || start >= end) return;
             highlight(1);
             let index = await partition(start, end);
-            highlight(3);
             await quickSort(start, index - 1);
-            highlight(4);
             await quickSort(index + 1, end);
         }
 
@@ -574,21 +720,19 @@
             
             for(let i=start; i<end; i++) {
                 if(isStopped) return start;
-                // Pivot is Yellow, Current is Pink
                 drawArray({[end]: '#facc15', [i]: '#f472b6', [pivotIndex]: '#38bdf8'});
                 if(array[i] < pivotValue) {
                     let temp = array[i]; array[i] = array[pivotIndex]; array[pivotIndex] = temp;
-                    playNote(array[pivotIndex]);
+                    playNote(array[pivotIndex], pivotIndex);
                     pivotIndex++;
                     await sleep(delay);
                 }
             }
             let temp = array[pivotIndex]; array[pivotIndex] = array[end]; array[end] = temp;
-            playNote(array[pivotIndex]);
+            playNote(array[pivotIndex], pivotIndex);
             return pivotIndex;
         }
 
-        // 7. HEAP SORT
         async function heapSort() {
             let n = arraySize;
             highlight(1);
@@ -602,7 +746,7 @@
                 highlight(4);
                 let temp = array[0]; array[0] = array[i]; array[i] = temp;
                 drawArray({[0]: '#f472b6', [i]: '#10b981'});
-                playNote(array[i]);
+                playNote(array[i], i);
                 await sleep(delay);
                 await heapify(i, 0);
             }
@@ -620,16 +764,13 @@
             if(largest !== i) {
                 let temp = array[i]; array[i] = array[largest]; array[largest] = temp;
                 drawArray({[i]: '#facc15', [largest]: '#facc15'});
-                playNote(array[largest]);
+                playNote(array[largest], largest);
                 await sleep(delay);
                 await heapify(n, largest);
             }
         }
 
-        // 8. RADIX SORT (LSD)
         async function radixSort() {
-            // Need integer logic for Radix
-            // We treat 0.0-1.0 as 0-1000
             let max = 0;
             for(let v of array) if(v>max) max=v;
             let maxInt = Math.floor(max * 1000);
@@ -650,7 +791,7 @@
                 let val = Math.floor(array[i] * 1000);
                 let digit = Math.floor(val/exp) % 10;
                 count[digit]++;
-                drawArray({[i]: '#f472b6'}); // Counting scan
+                drawArray({[i]: '#f472b6'}); 
                 await sleep(5);
             }
             
@@ -662,9 +803,9 @@
                 let digit = Math.floor(val/exp) % 10;
                 output[count[digit]-1] = array[i];
                 
-                // Show move to bucket
+                // Visual move
                 drawArray({[count[digit]-1]: '#38bdf8', [i]: '#f472b6'});
-                playNote(array[i]);
+                playNote(array[i], count[digit]-1);
                 await sleep(delay);
                 count[digit]--;
             }
@@ -672,9 +813,14 @@
             for(let i=0; i<arraySize; i++) {
                 if(isStopped) return;
                 array[i] = output[i];
-                drawArray({[i]: '#10b981'}); // Update pass
+                drawArray({[i]: '#10b981'});
+                if(i%3==0) playNote(array[i], i); // Throttled sound for copy back
                 await sleep(10);
             }
+        }
+
+        function getSortedRange(start, end) {
+            let res = []; for(let i=start; i<end; i++) res.push(i); return res;
         }
 
         init();
