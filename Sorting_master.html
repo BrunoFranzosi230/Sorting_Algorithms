@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Sorting Visualizer</title>
+    <style>
+        /* --- THEME: Deep Space / Cyberpunk --- */
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0;
+            font-family: 'Consolas', 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 { margin-bottom: 10px; font-size: 1.8rem; color: #38bdf8; text-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+        }
+
+        canvas { display: block; }
+
+        /* --- CONTROLS --- */
+        .controls-bar {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            background: #1e293b;
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        select {
+            padding: 12px;
+            background-color: #0f172a;
+            color: #fff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        button:active { transform: translateY(1px); }
+
+        #startBtn { background: linear-gradient(135deg, #10b981, #059669); }
+        #startBtn:hover { box-shadow: 0 0 15px #10b98166; }
+        #startBtn:disabled { background: #334155; opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+        #stopBtn { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+        #stopBtn:hover { box-shadow: 0 0 15px #ef444466; }
+        #stopBtn:disabled { background: #334155; opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+        #resetBtn { background-color: #3b82f6; }
+        #resetBtn:hover { background-color: #2563eb; }
+
+        /* --- CODE OVERLAY --- */
+        .code-panel {
+            width: 400px;
+            background-color: #0d1117;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            box-sizing: border-box;
+            font-size: 13px;
+            line-height: 1.5;
+            height: 300px; /* Match canvas height */
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .code-title {
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 5px;
+        }
+        
+        .code-line { padding: 2px 8px; border-radius: 4px; color: #8b949e; white-space: pre-wrap; font-family: 'Consolas', monospace; }
+        .active-line { background-color: #38bdf822; color: #e2e8f0; border-left: 3px solid #38bdf8; }
+        
+        /* Syntax Highlighting */
+        .kwd { color: #ff7b72; } /* Keyword (Red/Pink) */
+        .fun { color: #d2a8ff; } /* Function (Purple) */
+        .var { color: #79c0ff; } /* Variable (Blue) */
+        .com { color: #6e7681; font-style: italic; } /* Comment (Grey) */
+
+    </style>
+</head>
+<body>
+
+    <h1>Master Sorting Visualizer</h1>
+
+    <div class="main-container">
+        <div class="canvas-container">
+            <canvas id="myCanvas" width="800" height="350"></canvas>
+        </div>
+
+        <div class="code-panel">
+            <div class="code-title">Algorithm Logic</div>
+            <div id="codeDisplay">
+                </div>
+        </div>
+    </div>
+
+    <div class="controls-bar">
+        <select id="algoSelect" onchange="loadAlgorithm()">
+            <optgroup label="Simple Sorts">
+                <option value="bubble">Bubble Sort</option>
+                <option value="insertion">Insertion Sort</option>
+                <option value="selection">Selection Sort</option>
+                <option value="cocktail">Cocktail Shaker</option>
+            </optgroup>
+            <optgroup label="Efficient Sorts">
+                <option value="merge">Merge Sort</option>
+                <option value="quick">Quick Sort</option>
+                <option value="heap">Heap Sort</option>
+            </optgroup>
+            <optgroup label="Non-Comparison">
+                <option value="radix">Radix Sort (LSD)</option>
+            </optgroup>
+        </select>
+        <button id="resetBtn" onclick="init()">Shuffle Array</button>
+        <button id="startBtn" onclick="runAlgorithm()">Start</button>
+        <button id="stopBtn" onclick="stopSort()" disabled>Stop</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        const codeDisplay = document.getElementById('codeDisplay');
+        
+        // --- GLOBAL CONFIG ---
+        const arraySize = 60;
+        let array = [];
+        const delay = 30; // Global speed
+        
+        let audioCtx = null;
+        let masterGain = null;
+        let isStopped = true;
+
+        // --- AUDIO ENGINE (Pentatonic Minor + Echo) ---
+        const scale = [
+            130.81, 155.56, 174.61, 196.00, 233.08, 
+            261.63, 311.13, 349.23, 392.00, 466.16, 
+            523.25, 622.25, 698.46, 783.99, 932.33, 1046.50
+        ];
+
+        function playNote(value, type='sine') {
+            if (isStopped) return;
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // Echo Effect
+                const d = audioCtx.createDelay(); d.delayTime.value = 0.2;
+                const f = audioCtx.createGain(); f.gain.value = 0.3;
+                masterGain = audioCtx.createGain(); masterGain.gain.value = 0.1;
+                
+                masterGain.connect(audioCtx.destination);
+                masterGain.connect(d); d.connect(f); f.connect(d); d.connect(audioCtx.destination);
+            }
+
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            
+            // Map value to scale
+            const noteIndex = Math.floor(value * (scale.length - 1));
+            osc.frequency.value = scale[noteIndex] || scale[0];
+            osc.type = type;
+
+            const now = audioCtx.currentTime;
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.5, now + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+            osc.connect(g); g.connect(masterGain);
+            osc.start(); osc.stop(now + 0.25);
+        }
+
+        // --- ALGORITHM CODE DATA ---
+        const algorithms = {
+            bubble: [
+                `<span class="kwd">for</span> (let i = 0; i < n; i++) {`,
+                `  <span class="kwd">for</span> (let j = 0; j < n - i - 1; j++) {`,
+                `    <span class="com">// Compare adjacent</span>`,
+                `    <span class="kwd">if</span> (arr[j] > arr[j+1]) {`,
+                `      <span class="fun">swap</span>(arr, j, j+1);`,
+                `    }`,
+                `  }`,
+                `}`
+            ],
+            insertion: [
+                `<span class="kwd">for</span> (let i = 1; i < n; i++) {`,
+                `  let key = arr[i];`,
+                `  let j = i - 1;`,
+                `  <span class="com">// Slide elements right</span>`,
+                `  <span class="kwd">while</span> (j >= 0 && arr[j] > key) {`,
+                `    arr[j + 1] = arr[j];`,
+                `    j--;`,
+                `  }`,
+                `  arr[j + 1] = key;`,
+                `}`
+            ],
+            selection: [
+                `<span class="kwd">for</span> (let i = 0; i < n; i++) {`,
+                `  let min = i;`,
+                `  <span class="com">// Find min in remaining</span>`,
+                `  <span class="kwd">for</span> (let j = i+1; j < n; j++) {`,
+                `    <span class="kwd">if</span> (arr[j] < arr[min]) min = j;`,
+                `  }`,
+                `  <span class="kwd">if</span> (min !== i) <span class="fun">swap</span>(i, min);`,
+                `}`
+            ],
+            cocktail: [
+                `<span class="kwd">while</span> (swapped) {`,
+                `  swapped = <span class="kwd">false</span>;`,
+                `  <span class="com">// Forward Scan</span>`,
+                `  <span class="kwd">for</span> (let i=0; i<end; i++) <span class="fun">bubble</span>(i);`,
+                `  <span class="kwd">if</span> (!swapped) <span class="kwd">break</span>;`,
+                `  <span class="com">// Backward Scan</span>`,
+                `  <span class="kwd">for</span> (let i=end; i>=0; i--) <span class="fun">bubble</span>(i);`,
+                `}`
+            ],
+            merge: [
+                `<span class="fun">mergeSort</span>(arr, left, right) {`,
+                `  <span class="kwd">if</span> (left >= right) <span class="kwd">return</span>;`,
+                `  let mid = (left + right) / 2;`,
+                `  <span class="fun">mergeSort</span>(left, mid);`,
+                `  <span class="fun">mergeSort</span>(mid + 1, right);`,
+                `  <span class="fun">merge</span>(left, mid, right);`,
+                `}`
+            ],
+            quick: [
+                `<span class="fun">quickSort</span>(arr, start, end) {`,
+                `  <span class="kwd">if</span> (start >= end) <span class="kwd">return</span>;`,
+                `  let p = <span class="fun">partition</span>(arr, start, end);`,
+                `  <span class="fun">quickSort</span>(start, p - 1);`,
+                `  <span class="fun">quickSort</span>(p + 1, end);`,
+                `}`,
+                `<span class="com">// Partition moves smaller to left</span>`
+            ],
+            heap: [
+                `<span class="com">// Build Max Heap</span>`,
+                `<span class="kwd">for</span> (let i = n/2; i >= 0; i--) <span class="fun">heapify</span>(i);`,
+                `<span class="com">// Extract Max</span>`,
+                `<span class="kwd">for</span> (let i = n-1; i > 0; i--) {`,
+                `  <span class="fun">swap</span>(0, i);`,
+                `  <span class="fun">heapify</span>(0, i);`,
+                `}`
+            ],
+            radix: [
+                `<span class="kwd">let</span> max = <span class="fun">getMax</span>(arr);`,
+                `<span class="com">// Count sort for every digit</span>`,
+                `<span class="kwd">for</span> (let exp=1; max/exp > 0; exp*=10) {`,
+                `  <span class="fun">countSort</span>(arr, n, exp);`,
+                `}`,
+                `<span class="com">// No comparisons, just buckets!</span>`
+            ]
+        };
+
+        // --- HELPER FUNCTIONS ---
+        function init() {
+            stopSort();
+            setTimeout(() => {
+                array = [];
+                for(let i=0; i<arraySize; i++) array.push(Math.random());
+                drawArray();
+                loadAlgorithm();
+            }, 100);
+        }
+
+        function loadAlgorithm() {
+            const algo = document.getElementById('algoSelect').value;
+            const lines = algorithms[algo];
+            codeDisplay.innerHTML = lines.map((line, idx) => 
+                `<div id="line${idx}" class="code-line">${line}</div>`
+            ).join('');
+        }
+
+        function highlight(lineIdx) {
+            document.querySelectorAll('.code-line').forEach(e => e.classList.remove('active-line'));
+            if (lineIdx !== null && document.getElementById(`line${lineIdx}`)) {
+                document.getElementById(`line${lineIdx}`).classList.add('active-line');
+            }
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        function drawArray(colors = {}, sortedIndices = []) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const w = canvas.width / arraySize;
+            
+            for (let i = 0; i < arraySize; i++) {
+                const h = array[i] * (canvas.height - 40) + 10;
+                const x = i * w;
+                const y = canvas.height - h;
+                
+                let color = '#334155'; // Default Slate
+
+                if (sortedIndices.includes(i)) color = '#8b5cf6'; // Sorted (Violet)
+                if (colors[i]) color = colors[i]; // Override (Active/Pivot)
+                
+                ctx.fillStyle = color;
+                
+                // Glow effect for active elements
+                if (colors[i]) {
+                    ctx.shadowBlur = 15; ctx.shadowColor = color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+                
+                ctx.beginPath();
+                ctx.roundRect(x + 1, y, w - 2, h, [4, 4, 0, 0]);
+                ctx.fill();
+            }
+        }
+
+        function stopSort() {
+            isStopped = true;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('resetBtn').disabled = false;
+            highlight(null);
+        }
+
+        async function runAlgorithm() {
+            isStopped = false;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('resetBtn').disabled = true;
+
+            const algo = document.getElementById('algoSelect').value;
+
+            // Initialize Audio on first user gesture
+            if (!audioCtx) playNote(0); 
+
+            // Router
+            if (algo === 'bubble') await bubbleSort();
+            else if (algo === 'insertion') await insertionSort();
+            else if (algo === 'selection') await selectionSort();
+            else if (algo === 'cocktail') await cocktailSort();
+            else if (algo === 'merge') await mergeSort(0, array.length - 1);
+            else if (algo === 'quick') await quickSort(0, array.length - 1);
+            else if (algo === 'heap') await heapSort();
+            else if (algo === 'radix') await radixSort();
+
+            // Finish Animation (UPDATED: Fills Green and stays Green)
+            if (!isStopped) {
+                highlight(null);
+                let finishedColors = {}; // Accumulator for green bars
+                
+                for(let i=0; i<arraySize; i++) {
+                    if (isStopped) break;
+                    
+                    finishedColors[i] = '#10b981'; // Mark this bar as green
+                    drawArray(finishedColors);     // Draw all marked bars
+                    
+                    playNote(array[i]);
+                    await sleep(15);
+                }
+                // No final drawArray() here, so it stays green!
+            }
+            stopSort();
+        }
+
+        // ============================================
+        // ALGORITHMS
+        // ============================================
+
+        // 1. BUBBLE SORT
+        async function bubbleSort() {
+            for(let i=0; i<arraySize; i++) {
+                if(isStopped) return;
+                highlight(0);
+                for(let j=0; j<arraySize-i-1; j++) {
+                    if(isStopped) return;
+                    highlight(2);
+                    drawArray({[j]: '#f472b6', [j+1]: '#f472b6'}, getSortedRange(arraySize-i, arraySize));
+                    if(array[j] > array[j+1]) {
+                        highlight(4);
+                        let temp = array[j]; array[j] = array[j+1]; array[j+1] = temp;
+                        playNote(array[j+1]);
+                        await sleep(delay);
+                    }
+                }
+            }
+        }
+        function getSortedRange(start, end) {
+            let res = []; for(let i=start; i<end; i++) res.push(i); return res;
+        }
+
+        // 2. INSERTION SORT
+        async function insertionSort() {
+            for (let i = 1; i < arraySize; i++) {
+                if(isStopped) return;
+                let key = array[i];
+                let j = i - 1;
+                highlight(1);
+                drawArray({[i]: '#a78bfa'}); // Key is Purple
+                await sleep(delay);
+
+                while (j >= 0 && array[j] > key) {
+                    if(isStopped) return;
+                    highlight(4);
+                    array[j + 1] = array[j];
+                    drawArray({[j]: '#f472b6', [i]: '#a78bfa'}); // Moving Red
+                    playNote(array[j]);
+                    await sleep(delay);
+                    j--;
+                }
+                array[j + 1] = key;
+                highlight(8);
+                playNote(key);
+            }
+        }
+
+        // 3. SELECTION SORT
+        async function selectionSort() {
+            for (let i = 0; i < arraySize; i++) {
+                if(isStopped) return;
+                let min = i;
+                highlight(1);
+                for (let j = i + 1; j < arraySize; j++) {
+                    if(isStopped) return;
+                    highlight(3);
+                    // Fast Scan
+                    drawArray({[min]: '#facc15', [j]: '#38bdf8'}, getSortedRange(0, i));
+                    if (array[j] < array[min]) {
+                        min = j;
+                        playNote(array[min]);
+                    }
+                    await sleep(5);
+                }
+                if (min !== i) {
+                    highlight(6);
+                    let temp = array[i]; array[i] = array[min]; array[min] = temp;
+                    playNote(array[i]);
+                    await sleep(delay*2);
+                }
+            }
+        }
+
+        // 4. COCKTAIL SHAKER
+        async function cocktailSort() {
+            let swapped = true;
+            let start = 0, end = arraySize;
+            while(swapped) {
+                if(isStopped) return;
+                swapped = false;
+                // Forward
+                for(let i=start; i<end-1; i++) {
+                    if(isStopped) return;
+                    drawArray({[i]: '#f472b6', [i+1]: '#f472b6'});
+                    if(array[i] > array[i+1]) {
+                        let t=array[i]; array[i]=array[i+1]; array[i+1]=t;
+                        swapped = true; playNote(array[i+1]); await sleep(delay);
+                    }
+                }
+                if(!swapped) break;
+                end--;
+                // Backward
+                for(let i=end-1; i>=start; i--) {
+                    if(isStopped) return;
+                    drawArray({[i]: '#38bdf8', [i+1]: '#38bdf8'});
+                    if(array[i] > array[i+1]) {
+                        let t=array[i]; array[i]=array[i+1]; array[i+1]=t;
+                        swapped = true; playNote(array[i]); await sleep(delay);
+                    }
+                }
+                start++;
+            }
+        }
+
+        // 5. MERGE SORT
+        async function mergeSort(left, right) {
+            if(isStopped || left >= right) return;
+            highlight(1);
+            const mid = Math.floor((left + right) / 2);
+            highlight(3);
+            await mergeSort(left, mid);
+            highlight(4);
+            await mergeSort(mid + 1, right);
+            highlight(5);
+            await merge(left, mid, right);
+        }
+
+        async function merge(left, mid, right) {
+            if(isStopped) return;
+            let lArr = array.slice(left, mid + 1);
+            let rArr = array.slice(mid + 1, right + 1);
+            let i=0, j=0, k=left;
+
+            while(i < lArr.length && j < rArr.length) {
+                if(isStopped) return;
+                // Show range being merged in Blue
+                let rangeColors = {};
+                for(let x=left; x<=right; x++) rangeColors[x] = '#38bdf8';
+                rangeColors[k] = '#facc15'; // Current write pos Yellow
+                
+                drawArray(rangeColors);
+                
+                if(lArr[i] <= rArr[j]) { array[k] = lArr[i]; i++; }
+                else { array[k] = rArr[j]; j++; }
+                playNote(array[k]);
+                await sleep(delay);
+                k++;
+            }
+            while(i < lArr.length) {
+                if(isStopped) return;
+                let rangeColors = {}; for(let x=left; x<=right; x++) rangeColors[x] = '#38bdf8';
+                rangeColors[k] = '#facc15';
+                drawArray(rangeColors);
+                array[k] = lArr[i]; playNote(array[k]); await sleep(delay); i++; k++;
+            }
+            while(j < rArr.length) {
+                if(isStopped) return;
+                let rangeColors = {}; for(let x=left; x<=right; x++) rangeColors[x] = '#38bdf8';
+                rangeColors[k] = '#facc15';
+                drawArray(rangeColors);
+                array[k] = rArr[j]; playNote(array[k]); await sleep(delay); j++; k++;
+            }
+        }
+
+        // 6. QUICK SORT
+        async function quickSort(start, end) {
+            if(isStopped || start >= end) return;
+            highlight(1);
+            let index = await partition(start, end);
+            highlight(3);
+            await quickSort(start, index - 1);
+            highlight(4);
+            await quickSort(index + 1, end);
+        }
+
+        async function partition(start, end) {
+            if(isStopped) return start;
+            let pivotValue = array[end];
+            let pivotIndex = start;
+            
+            for(let i=start; i<end; i++) {
+                if(isStopped) return start;
+                // Pivot is Yellow, Current is Pink
+                drawArray({[end]: '#facc15', [i]: '#f472b6', [pivotIndex]: '#38bdf8'});
+                if(array[i] < pivotValue) {
+                    let temp = array[i]; array[i] = array[pivotIndex]; array[pivotIndex] = temp;
+                    playNote(array[pivotIndex]);
+                    pivotIndex++;
+                    await sleep(delay);
+                }
+            }
+            let temp = array[pivotIndex]; array[pivotIndex] = array[end]; array[end] = temp;
+            playNote(array[pivotIndex]);
+            return pivotIndex;
+        }
+
+        // 7. HEAP SORT
+        async function heapSort() {
+            let n = arraySize;
+            highlight(1);
+            for(let i = Math.floor(n/2)-1; i>=0; i--) {
+                if(isStopped) return;
+                await heapify(n, i);
+            }
+            highlight(3);
+            for(let i = n-1; i>0; i--) {
+                if(isStopped) return;
+                highlight(4);
+                let temp = array[0]; array[0] = array[i]; array[i] = temp;
+                drawArray({[0]: '#f472b6', [i]: '#10b981'});
+                playNote(array[i]);
+                await sleep(delay);
+                await heapify(i, 0);
+            }
+        }
+
+        async function heapify(n, i) {
+            if(isStopped) return;
+            let largest = i;
+            let l = 2*i + 1;
+            let r = 2*i + 2;
+
+            if(l < n && array[l] > array[largest]) largest = l;
+            if(r < n && array[r] > array[largest]) largest = r;
+
+            if(largest !== i) {
+                let temp = array[i]; array[i] = array[largest]; array[largest] = temp;
+                drawArray({[i]: '#facc15', [largest]: '#facc15'});
+                playNote(array[largest]);
+                await sleep(delay);
+                await heapify(n, largest);
+            }
+        }
+
+        // 8. RADIX SORT (LSD)
+        async function radixSort() {
+            // Need integer logic for Radix
+            // We treat 0.0-1.0 as 0-1000
+            let max = 0;
+            for(let v of array) if(v>max) max=v;
+            let maxInt = Math.floor(max * 1000);
+
+            for(let exp=1; Math.floor(maxInt/exp)>0; exp*=10) {
+                if(isStopped) return;
+                highlight(3);
+                await countSort(exp);
+            }
+        }
+
+        async function countSort(exp) {
+            let output = new Array(arraySize).fill(0);
+            let count = new Array(10).fill(0);
+            
+            for(let i=0; i<arraySize; i++) {
+                if(isStopped) return;
+                let val = Math.floor(array[i] * 1000);
+                let digit = Math.floor(val/exp) % 10;
+                count[digit]++;
+                drawArray({[i]: '#f472b6'}); // Counting scan
+                await sleep(5);
+            }
+            
+            for(let i=1; i<10; i++) count[i] += count[i-1];
+
+            for(let i=arraySize-1; i>=0; i--) {
+                if(isStopped) return;
+                let val = Math.floor(array[i] * 1000);
+                let digit = Math.floor(val/exp) % 10;
+                output[count[digit]-1] = array[i];
+                
+                // Show move to bucket
+                drawArray({[count[digit]-1]: '#38bdf8', [i]: '#f472b6'});
+                playNote(array[i]);
+                await sleep(delay);
+                count[digit]--;
+            }
+
+            for(let i=0; i<arraySize; i++) {
+                if(isStopped) return;
+                array[i] = output[i];
+                drawArray({[i]: '#10b981'}); // Update pass
+                await sleep(10);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
